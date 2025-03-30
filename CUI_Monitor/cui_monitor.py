@@ -2,34 +2,22 @@ import time
 import logging
 import os
 import hashlib
+import platform
 from watchdog.observers import Observer
 from watchdog.events import *
 
 '''
 Other things worth adding or improving:
-1. DEBUG mode
-Currently, the number of print statements for debugging purposes is quite high, 
-so it could be beneficial to add a MODE to toggle them on and off.
-this is instead of manually going through and toggling each one.
-
-2. SHA3 Hashes
-Currently, we are working with SHA1 hashes.
-SHA1 hashes are not industry standard but SHA3 is.
-
-3. HASH Database not hardcoded.
+1. HASH Database not hardcoded. (half/done)
 Currently, the hashes present to determine whether something is CUI is in the program itself.
 There is no way to change these currently, (if the file changes, CUI hashes will not change)
 
-4. Still need to test Linux
-The fix to the directory issue might only work in windows.
-The fix if needed would be simple. 
-just a function to determine operating system similiar to the hide file function I originally made
-
-5. Test without debug 
-(988 seconds with)
-could be less without.
-If it takes a long time even without print statements, consider making/finding more optimizations
+2. Testing Data (It's still long)
+fastest time: 729s on windows (slow)
+fastest time: 8s on linux though (fast)
 '''
+
+DEBUG_MODE = False
 
 # Set up the logging file and format
 logging.basicConfig(
@@ -44,7 +32,6 @@ class cuiHandler(PatternMatchingEventHandler):
 
     def on_created(self, event):
         logging.info(f"Created: {event.src_path}")
-        src_name = os.path.basename(event.src_path)
         self.check_cui(event.src_path)
 
     def on_deleted(self, event):
@@ -52,9 +39,6 @@ class cuiHandler(PatternMatchingEventHandler):
 
     def on_moved(self, event):
         logging.info(f"Moved: {event.src_path} to {event.dest_path}")
-        dest_name = os.path.basename(event.dest_path)
-        src_name = os.path.basename(event.src_path)
-        # print(dest_name)
         try:
             self.patterns.append(event.dest_path)
             self.patterns.remove(event.src_path)
@@ -68,73 +52,101 @@ class cuiHandler(PatternMatchingEventHandler):
     
     # Into Non-watchdog functions 
     def setup_cui(self, dir_path):
-        print(f"[setup_cui] Path: {dir_path}")
+        if DEBUG_MODE:
+            print(f"[setup_cui] Path: {dir_path}")
         # some folders are not accessible by the program (Application Data)
         # as a result, use try/except whenever we use "os.listdir(dir_path)"
         try:
-            print(f"[setup_cui] Items in path: {os.listdir(dir_path)}")
+            if DEBUG_MODE:
+                print(f"[setup_cui] Items in path: {os.listdir(dir_path)}")
             for file in os.listdir(dir_path):
                 # fix pathing issue
-                file_path = dir_path + "\\" + file # may only work in windows
-                print(f"[setup_cui] File: {os.path.abspath(file_path)}")
+                if (self.client_os == "Windows"):
+                    file_path = dir_path + "\\" + file # may only work in windows
+                else: # Linux os
+                    file_path = dir_path + "/" + file
+                if DEBUG_MODE:
+                    print(f"[setup_cui] File: {os.path.abspath(file_path)}")
                 # check if folder -> if folder, check inside
                 if (os.path.isdir(file_path)):
                     # if folder, check inside
-                    print(f"[setup_cui] {file} is directory")
-                    print(f"[setup_cui] {file_path} is directory path")
+                    if DEBUG_MODE:
+                        print(f"[setup_cui] {file} is directory")
+                        print(f"[setup_cui] {file_path} is directory path")
                     self.setup_cui(file_path) # recursion to cover folders in folders
                 else:
                     self.check_cui(os.path.abspath(file_path))
         except:
-            print("[setup_cui] This folder is not accessible.")
-        print(f"Patterns: {self.patterns}")
-        print(f"Ignored: {self.ignore_patterns}")
+            if DEBUG_MODE:
+                print("[setup_cui] This folder is not accessible.")
+            pass
+        if DEBUG_MODE:
+            print(f"Patterns: {self.patterns}")
+            print(f"Ignored: {self.ignore_patterns}")
 
     def check_cui(self, filename):
         cui_status = self.compare_hash(filename)
-        print(f"[check_cui] File: {filename}, CUI: {cui_status}")
+        if DEBUG_MODE:
+            print(f"[check_cui] File: {filename}, CUI: {cui_status}")
         if (cui_status == False):
             # in the setup_cui function run, it will check everything
             # we only want to put things in ignore_patterns that are in patterns
             # can try to be generalized by splicing the list
             # or be specific with what we have right now
             if (((".txt" in filename) or (".cui" in filename)) and ((".vscode" in filename) == False)): # specific case
-                print(f"[check_cui] File: {filename} is FoI")
+                if DEBUG_MODE:
+                    print(f"[check_cui] File: {filename} is FoI")
                 self.ignore_patterns.append(filename)
-
-    def sha1_sum(self, filename):
+        else: # file is cui
+            if ((".txt" not in filename) and (".cui" not in filename)):
+                self.patterns.append(filename)
+    
+    def sha3_sum(self, filename):
         # read in 64kb chunks, so we don't eat all the memory in the system
         BUFFER_SIZE = 65536
-        sha1 = hashlib.sha1()
+        sha3 = hashlib.sha3_256()
         try:
-            with open(os.path.abspath(filename), "rb") as f:
+            with open(filename, "rb") as f:
                 while True:
                     data = f.read(BUFFER_SIZE)
                     if not data:
                         break
-                    sha1.update(data)
+                    sha3.update(data)
         except:
-            print("[sha1sum] Error: couldn't open file")
+            if DEBUG_MODE:
+                print(f"[sha3sum] Error with hashing file: {filename}")
             return False
-        print(f"[sha1sum] File: {filename}, Hash: {sha1.hexdigest()}")
-        return sha1.hexdigest()
+        if DEBUG_MODE:
+                print(f"[sha3sum] File: {filename}, Hash: {sha3.hexdigest()}")
+        return sha3.hexdigest()
     
     def compare_hash(self, filename):
-        sha1_hash = self.sha1_sum(filename)
+        sha3_hash = self.sha3_sum(filename)
         # This is where you put hashes of all CUI
-        cui_hashes = [
-                "d4a4cd4a80c8abc6718a3ea80db60dc2783ce3f0",
-                "9d174eddc47849cc600084eb94727603c8fcfcb5",
-                "da39a3ee5e6b4b0d3255bfef95601890afd80709"] 
-        if sha1_hash in cui_hashes:
+        cui_hashes = self.hashes
+        # cui_hashes = [
+        #     "9add5c19e18aec0f5fe3639b25f3980022a9465239a6c27c23229d15aa6755a5",
+        #     "7c1fbca953a92ada6ab98a6c4605288310da8ad5383b6eba4995d853ff751c8d",
+        #     "ad9fde7e5311b3e61ee8e4ddc1327051c53e4bc3f1c63bbf1b990d6e9c60fcdd"] 
+        if sha3_hash in cui_hashes:
             return True
         else:
             return False
+        
+    def import_hashes():
+        cui_hashes = []
+        with open('hashdatabase.txt', 'r') as f:
+            # create an array and return it
+            for line in f:
+                cui_hashes.append(line.strip("\n"))
+            return cui_hashes
 
     # Important: Controls filter!
     patterns = ["*.txt", "*.cui"]
-    ignore_patterns = ["file_changes.log"]
+    ignore_patterns = ["file_changes.log","hashdatabase.txt"]
     # ignore_directories = True
+    hashes = import_hashes()
+    client_os = platform.system()
 
 def monitor_setup(dir_path):
     observer.schedule(event_handler, dir_path, recursive = True)
@@ -166,7 +178,7 @@ if __name__ == "__main__":
     elif (MODE == 2):
         monitor_setup(parent_directory)
     else:
-        print("[MAIN] Error: Unknown Mode")  
+        print("[Main] Error: Unknown Mode")  
 
     # Monitoring begins
     observer.start()
