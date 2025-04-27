@@ -170,7 +170,7 @@ class App(tk.Tk):
         self.inputfile_output_label["text"] = f"{filename}"
 
     def show_outputfile(self):
-        self.outputfile_output_label["text"] = f"{self.output_textbox.get("1.0", tk.END)}"
+        self.outputfile_output_label["text"] = f"{self.output_textbox.get('1.0', tk.END)}"
 
     def encrypt(self, cipher: Cipher, payload: bytes) -> bytes:
         # Encrypt Payload
