@@ -1,3 +1,4 @@
+import argparse
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog as fd
@@ -10,29 +11,18 @@ from cryptography.hazmat.primitives.ciphers.algorithms import AES
 from cryptography.hazmat.primitives.ciphers.modes import CBC
 from cryptography.hazmat.primitives.padding import PKCS7
 
-# Our tk version is 8.6.15
-'''
-Goal: create a GUI that uses the functionality of the aes program
-Mode (OptionMenu): Encrypt/Decrypt
-Select (AskOpen): Key
-Select (AskOpen): IV
-Select (AskOpen): Input file
-Text (Textbox): Output file
-Button: Start
-'''
+
+
+DEFAULT_FILE_SUFFIX_DECRYPT = "_decrypted"
+DEFAULT_FILE_SUFFIX_ENCRYPT = "_encrypted"
+
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
         # Window settings
         self.geometry("1080x240")
         self.title("Simple Encrypt")
-        '''window_width = 300
-        # window_height = 200
-        # screen_width = self.winfo_screenwidth()
-        # screen_height = self.winfo_screenheight()
-        # center_x = int(screen_width/2 - window_width/2)
-        # center_y = int(screen_height/2 - window_height/2)
-        # self.geometry(f"{window_width}x{window_height}+{center_x}+{center_y}")'''
         
         # Init data
         self.modes = ("Encrypt", "Decrypt")
@@ -119,7 +109,7 @@ class App(tk.Tk):
         start_button = ttk.Button(
             self,
             text="Start",
-            command = self.aes
+            command = self.gui_aes
         )
         start_button.grid(column=3, row=0, sticky=tk.W, **padding)
 
@@ -172,131 +162,107 @@ class App(tk.Tk):
     def show_outputfile(self):
         self.outputfile_output_label["text"] = f"{self.output_textbox.get('1.0', tk.END)}"
 
-    def encrypt(self, cipher: Cipher, payload: bytes) -> bytes:
-        # Encrypt Payload
-        enc = cipher.encryptor()
-        ciphertext = enc.update(payload) + enc.finalize()
-        return ciphertext
-    
-    def decrypt(self, cipher: Cipher, payload: bytes) -> bytes:
-        # Decrypt Payload
-        dec = cipher.decryptor()
-        plaintext = dec.update(payload) + dec.finalize()
-        return plaintext
+    def gui_aes(self):
+        mode = self.mode_output_label["text"]
+        key_path = self.key_output_label["text"]
+        iv_path = self.iv_output_label["text"]
+        input_path = self.inputfile_output_label["text"]
+        output_path = self.outputfile_output_label["text"].strip("\n")
+        aes(mode, key_path, iv_path, input_path, output_path, gui=True)
 
-    def aes(self):
-        try:
-            # get operation
-            mode = self.mode_output_label["text"]
-            assert "Encrypt" in mode or "Decrypt" in mode
-            if (mode == "Encrypt"):
-                # print("Using Encryption!")
-                enc = True
-            else:
-                # print("Using Decryption")
-                enc = False
 
-            # get key
-            key_path = self.key_output_label["text"]
-            # make sure key_path exists
-            if not path.exists(key_path):
-                print(f"Key path is not valid: {key_path}")
-                raise ValueError
+def aes(mode, key_path, iv_path, input_path, output_path, gui=False):
+    try:
+        assert mode in ("Encrypt", "Decrypt")
+        enc = mode == "Encrypt"
 
-            # get iv
-            iv_path = self.iv_output_label["text"]
-            # make sure iv_path exists
-            if not path.exists(iv_path):
-                print(f"IV path is not valid: {iv_path}")
-                raise ValueError
+        # Validate file paths
+        for file_path in [key_path, iv_path, input_path]:
+            if not path.exists(file_path):
+                raise ValueError(f"File not found: {file_path}")
 
-            # get input file
-            input_path = self.inputfile_output_label["text"]
-            # make sure input_path exists
-            if not path.exists(input_path):
-                print(f"Input path is not valid: {input_path}")
-                raise ValueError
+        restricted_characters = ["\\", "/", ":", "*", "?", '"', "<", ">", "|"]
+        if any(char in output_path for char in restricted_characters):
+            raise ValueError("Invalid characters in output path")
 
-            output_path = self.outputfile_output_label["text"]
-            # make sure output_path exists and legal
-            restricted_characters = ["\\", "/", ":", "*", "?", '"', "<", ">", "|"]
-            for char in restricted_characters:
-                if (char in output_path):
-                    print("Invalid Text given for output path")
-                    raise ValueError
+        # Read key, IV, and input file
+        with open(key_path, "r", encoding="utf-8") as key_data:
+            key_bytes = bytearray.fromhex(key_data.read().strip())
+        with open(iv_path, "r", encoding="utf-8") as iv_data:
+            iv_bytes = bytearray.fromhex(iv_data.read().strip())
+        with open(input_path, "rb") as input_data:
+            input_bytes = input_data.read()
 
-        except (ValueError, AssertionError) as exc:
-            print("Error detected, closing program")
-            raise SystemExit(1) from exc
-        
-        # read in the key
-        # print("Reading in the key...")
-        key_bytes = input_bytes = iv_bytes = None
-        try:
-            with open(key_path, "r", encoding="utf-8") as key_data:
-                key_str = key_data.read()
-            # print(f"Key: {key_str}")
-        except OSError as exc:
-            print("Unable to access key file.")
-            raise SystemExit(1) from exc
-        try:
-            with open(iv_path, "r", encoding="utf-8") as iv_data:
-                iv_str = iv_data.read()
-            # print(f"IV: {iv_str}")
-        except OSError as exc:
-            print("Unable to access IV file.")
-            raise SystemExit(1) from exc
-        try:
-            with open(input_path, "rb") as input_data:
-                input_bytes = input_data.read()
-            # print(f"Input: {input_bytes}")
-        except OSError as exc:
-            print("Unable to access input file.")
-            raise SystemExit(1) from exc
-        
-        try:
-            key_bytes = bytearray.fromhex(key_str)
-            iv_bytes = bytearray.fromhex(iv_str)
-        except ValueError:
-            print("Invalid key/iv")
-
-        # encrypt
+        # Perform encryption or decryption
         cipher = Cipher(AES(key_bytes), CBC(iv_bytes))
-        result = None
         if enc:
             padder = PKCS7(128).padder()
             input_padded = padder.update(input_bytes) + padder.finalize()
-            result = self.encrypt(cipher, input_padded)
+            result = cipher.encryptor().update(input_padded) + cipher.encryptor().finalize()
         else:
-            result_padded = self.decrypt(cipher, input_bytes)
+            result_padded = cipher.decryptor().update(input_bytes) + cipher.decryptor().finalize()
             try:
                 unpadder = PKCS7(128).unpadder()
                 result = unpadder.update(result_padded) + unpadder.finalize()
-            except ValueError:
-                print("Bad padding detected. Keeping padding intact.")
-                result = result_padded
+            except ValueError as e:
+                raise ValueError("Decryption failed: Invalid padding or corrupted data.") from e
 
-        # Write output to file
-        output_path = output_path.strip("\n") # STRIP THE NEWLINE
-        # print(f"Output: {output_path}, Type: {type(output_path)}")
-        try:
-            # output_path = str(output_path)
-            with open(output_path, "wb") as output_data:
-                output_data.write(result)
+        # Write output
+        with open(output_path, "wb") as output_data:
+            output_data.write(result)
+
+        if gui:
             showinfo(
-                title = "Success!",
-                message = f"Mode: {mode}\n" \
-                f"Key: {key_path}\n" \
-                f"IV: {iv_path}\n" \
-                f"Input File: {input_path}\n" \
-                f"Output File: {output_path}\n" \
-                f"{mode}ion successful, saved to {output_path}" 
+                title="Success!",
+                message=f"Mode: {mode}\n"
+                        f"Key: {key_path}\n"
+                        f"IV: {iv_path}\n"
+                        f"Input File: {input_path}\n"
+                        f"Output File: {output_path}\n"
+                        f"{mode}ion successful, saved to {output_path}"
             )
-        except OSError as exc:
-            print("Unable to write to output file.")
-            raise SystemExit(1) from exc
+        else:
+            print(f"{mode}ion successful, saved to {output_path}")
+
+    except Exception as e:
+        if gui:
+            showinfo(title="Error", message=str(e))
+        else:
+            print(f"Error: {e}")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Simple Encrypt CLI/GUI Tool")
+    parser.add_argument("--cli", action="store_true", help="Use CLI mode")
+    parser.add_argument("--mode", choices=["Encrypt", "Decrypt"], help="Encrypt or Decrypt")
+    parser.add_argument("--key", help="Path to key file")
+    parser.add_argument("--iv", help="Path to IV file")
+    parser.add_argument("--input", nargs='+', help="Path(s) to input file(s)")
+    parser.add_argument("--output", nargs='*', help="Path(s) to output file(s) (optional, defaults to input-based names)")
+    args = parser.parse_args()
+
+    if args.cli:
+        if not all([args.mode, args.key, args.iv, args.input]):
+            print("Error: Arguments (--mode, --key, --iv, --input) are required in CLI mode.")
+            return
+
+        # Ensure output file list matches input file list
+        output_files = args.output if args.output else []
+        for i, input_file in enumerate(args.input):
+            if i < len(output_files):
+                output_file = output_files[i]
+            else:
+                # Generate default output file name
+                base_name, ext = path.splitext(input_file)
+                suffix = DEFAULT_FILE_SUFFIX_ENCRYPT if args.mode == "Encrypt" else DEFAULT_FILE_SUFFIX_DECRYPT
+                output_file = f"{base_name}{suffix}{ext}"
+
+            print(f"Processing: {input_file} -> {output_file}")
+            aes(args.mode, args.key, args.iv, input_file, output_file)
+    else:
+        app = App()
+        app.mainloop()
 
 
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    main()
