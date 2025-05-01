@@ -21,7 +21,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         # Window settings
-        self.geometry("1080x240")
+        self.geometry("1080x360")
         self.title("Simple Encrypt")
         
         # Init data
@@ -36,6 +36,10 @@ class App(tk.Tk):
     def create_widgets(self):
         # Widget padding
         padding = {'padx': 5, 'pady': 5}
+
+        # Helper Label
+        help_label = ttk.Label(self, text="How to use:\n\n1. Select a Mode: Encrypt or Decrypt\n2. Select a Key, IV, and Input files\n3. Enter in the text box the name of the output file. It will be saved to the folder this program is located in.\n4. Click Submit to confirm the outputfile name.\n5. Once everything has been selected in red, click start to start the encryption/decryption process.")
+        help_label.grid(column=0, row=6, columnspan=2, sticky=tk.W, **padding)
 
         # Mode Label
         mode_label = ttk.Label(self,  text="Select Mode:")
@@ -124,7 +128,7 @@ class App(tk.Tk):
 
         filename = fd.askopenfilename(
             title="Open a file",
-            initialdir="/",
+            initialdir="~",
             filetypes=filetypes
         )
 
@@ -138,7 +142,7 @@ class App(tk.Tk):
 
         filename = fd.askopenfilename(
             title="Open a file",
-            initialdir="/",
+            initialdir="~",
             filetypes=filetypes
         )
 
@@ -153,7 +157,7 @@ class App(tk.Tk):
 
         filename = fd.askopenfilename(
             title="Open a file",
-            initialdir="/",
+            initialdir="~",
             filetypes=filetypes
         )
 
@@ -231,7 +235,7 @@ def aes(mode, key_path, iv_path, input_path, output_path, gui=False):
             print(f"Error: {e}")
 
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="Simple Encrypt CLI/GUI Tool")
     parser.add_argument("--cli", action="store_true", help="Use CLI mode")
     parser.add_argument("--mode", choices=["Encrypt", "Decrypt"], help="Encrypt or Decrypt")
@@ -244,7 +248,7 @@ if __name__ == "__main__":
     if args.cli:
         if not all([args.mode, args.key, args.iv, args.input]):
             print("Error: Arguments (--mode, --key, --iv, --input) are required in CLI mode.")
-            exit
+            return
 
         # Ensure output file list matches input file list
         output_files = args.output if args.output else []
@@ -262,3 +266,7 @@ if __name__ == "__main__":
     else:
         app = App()
         app.mainloop()
+
+
+if __name__ == "__main__":
+    main()
