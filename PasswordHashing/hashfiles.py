@@ -20,9 +20,12 @@ def export_hashes(hashlist):
             file.writelines(line + "\n") 
 
 directory_name = os.path.dirname(__file__)
+file_name = os.path.basename(__file__)
 sha3_hashlist = []
 
 for file in os.listdir(directory_name):
+    if file == file_name:
+        pass
     sha3_hash = sha3_sum(file)
     sha3_hashlist.append(f"File: {file} SHA3: {sha3_hash}")
     print(f"File: {file} SHA3: {sha3_hash}")
