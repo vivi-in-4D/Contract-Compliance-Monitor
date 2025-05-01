@@ -231,7 +231,7 @@ def aes(mode, key_path, iv_path, input_path, output_path, gui=False):
             print(f"Error: {e}")
 
 
-def main():
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Simple Encrypt CLI/GUI Tool")
     parser.add_argument("--cli", action="store_true", help="Use CLI mode")
     parser.add_argument("--mode", choices=["Encrypt", "Decrypt"], help="Encrypt or Decrypt")
@@ -244,7 +244,7 @@ def main():
     if args.cli:
         if not all([args.mode, args.key, args.iv, args.input]):
             print("Error: Arguments (--mode, --key, --iv, --input) are required in CLI mode.")
-            return
+            exit
 
         # Ensure output file list matches input file list
         output_files = args.output if args.output else []
@@ -262,7 +262,3 @@ def main():
     else:
         app = App()
         app.mainloop()
-
-
-if __name__ == "__main__":
-    main()
