@@ -21,7 +21,7 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         # Window settings
-        self.geometry("1080x240")
+        self.geometry("1080x360")
         self.title("Simple Encrypt")
         
         # Init data
@@ -36,6 +36,10 @@ class App(tk.Tk):
     def create_widgets(self):
         # Widget padding
         padding = {'padx': 5, 'pady': 5}
+
+        # Helper Label
+        help_label = ttk.Label(self, text="How to use:\n\n1. Select a Mode: Encrypt or Decrypt\n2. Select a Key, IV, and Input files\n3. Enter in the text box the name of the output file. It will be saved to the folder this program is located in.\n4. Click Submit to confirm the outputfile name.\n5. Once everything has been selected in red, click start to start the encryption/decryption process.")
+        help_label.grid(column=0, row=6, columnspan=2, sticky=tk.W, **padding)
 
         # Mode Label
         mode_label = ttk.Label(self,  text="Select Mode:")
@@ -124,7 +128,7 @@ class App(tk.Tk):
 
         filename = fd.askopenfilename(
             title="Open a file",
-            initialdir="/",
+            initialdir="~",
             filetypes=filetypes
         )
 
@@ -138,7 +142,7 @@ class App(tk.Tk):
 
         filename = fd.askopenfilename(
             title="Open a file",
-            initialdir="/",
+            initialdir="~",
             filetypes=filetypes
         )
 
@@ -153,7 +157,7 @@ class App(tk.Tk):
 
         filename = fd.askopenfilename(
             title="Open a file",
-            initialdir="/",
+            initialdir="~",
             filetypes=filetypes
         )
 

@@ -11,10 +11,6 @@ Other things worth adding or improving:
 1. HASH Database not hardcoded. (half/done)
 Currently, the hashes present to determine whether something is CUI is in the program itself.
 There is no way to change these currently, (if the file changes, CUI hashes will not change)
-
-2. Testing Data (It's still long)
-fastest time: 729s on windows (slow)
-fastest time: 8s on linux though (fast)
 '''
 
 DEBUG_MODE = False
@@ -31,17 +27,20 @@ class cuiHandler(PatternMatchingEventHandler):
         logging.info(f'Modified: {event.src_path}')
 
     def on_created(self, event):
-        logging.info(f"Created: {event.src_path}")
         self.check_cui(event.src_path)
+        logging.info(f"Created: {event.src_path}")
 
     def on_deleted(self, event):
         logging.info(f"Deleted: {event.src_path}")
 
     def on_moved(self, event):
         logging.info(f"Moved: {event.src_path} to {event.dest_path}")
+        # check to see if destination is in ignore and remove if so (solves undo problem)
+        if event.dest_path in self.ignore_patterns:
+            self.ignore_patterns.remove(event.dest_path)
         try:
             self.patterns.append(event.dest_path)
-            self.patterns.remove(event.src_path)
+            # self.patterns.remove(event.src_path)
         except:
             print("Source not in patterns")
             self.patterns.append(event.dest_path)
@@ -98,7 +97,7 @@ class cuiHandler(PatternMatchingEventHandler):
                     print(f"[check_cui] File: {filename} is FoI")
                 self.ignore_patterns.append(filename)
         else: # file is cui
-            if ((".txt" not in filename) and (".cui" not in filename)):
+            if ((".txt" not in filename) and (".cui" not in filename) and (".enc" not in filename)):
                 self.patterns.append(filename)
     
     def sha3_sum(self, filename):
@@ -124,10 +123,6 @@ class cuiHandler(PatternMatchingEventHandler):
         sha3_hash = self.sha3_sum(filename)
         # This is where you put hashes of all CUI
         cui_hashes = self.hashes
-        # cui_hashes = [
-        #     "9add5c19e18aec0f5fe3639b25f3980022a9465239a6c27c23229d15aa6755a5",
-        #     "7c1fbca953a92ada6ab98a6c4605288310da8ad5383b6eba4995d853ff751c8d",
-        #     "ad9fde7e5311b3e61ee8e4ddc1327051c53e4bc3f1c63bbf1b990d6e9c60fcdd"] 
         if sha3_hash in cui_hashes:
             return True
         else:
@@ -142,7 +137,7 @@ class cuiHandler(PatternMatchingEventHandler):
             return cui_hashes
 
     # Important: Controls filter!
-    patterns = ["*.txt", "*.cui"]
+    patterns = ["*.txt", "*.cui", "*.enc"]
     ignore_patterns = ["file_changes.log","hashdatabase.txt"]
     # ignore_directories = True
     hashes = import_hashes()
@@ -151,7 +146,8 @@ class cuiHandler(PatternMatchingEventHandler):
 def monitor_setup(dir_path):
     observer.schedule(event_handler, dir_path, recursive = True)
     start_time = time.time()
-    cuiHandler().setup_cui(dir_path)
+    if not SKIP_SETUP:
+        cuiHandler().setup_cui(dir_path)
     stop_time = time.time()
     elasped_time = stop_time - start_time
     print(f"[monitor_setup] The setup process took {elasped_time} seconds to complete.")
@@ -163,6 +159,7 @@ if __name__ == "__main__":
     # 1 = Parent Directory, 
     # 2 = Parent Parent Directory (testing)
     MODE = 0 
+    SKIP_SETUP = False
 
     home_path = os.path.expanduser("~")
     directory_name = os.path.dirname(__file__)
