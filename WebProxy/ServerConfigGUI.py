@@ -4,7 +4,7 @@ import tkinter as tk
 import socket as sc
 import re
 
-#===VARS===#
+#===GLOBALS===#
 
 window = tk.Tk()
 window.title("PROXY SERVER CONFIGURATION")
@@ -243,7 +243,7 @@ def confirmation_popup(callback_yes, callback_no=None):
     button_yes.pack(padx=100)
 
     button_no = tk.Button(popup, text=" No ", command=on_no)
-    button_no.pack(padx=100,)
+    button_no.pack(padx=100)
 
     window.wait_window(popup)
 
@@ -252,40 +252,42 @@ def wrap_with_confirmation(callback):
         confirmation_popup(callback_yes=callback)
     return wrapped_callback
 
+#===BUTTON_CONFIGS===#
+
 button_sync_ip.config(command=wrap_with_confirmation(on_button_click_sync_ip))
 button_reset_ip.config(command=wrap_with_confirmation(on_button_click_reset_ip))
 button_add_block.config(command=wrap_with_confirmation(on_button_click_add_block))
 button_remove_block.config(command=wrap_with_confirmation(on_button_click_remove_block))
 button_add_ip.config(command=wrap_with_confirmation(on_button_click_add_IP))
 button_remove_ip.config(command=wrap_with_confirmation(on_button_click_remove_IP))
-button_refresh_webtraffic.config(webtraffic_refresh())
+button_refresh_webtraffic.config(command=query_webtraffic)
 
 
-#===BUTTON_CONFIGS===#
+#===GUI SETUP===#
 
-label_proxy_ip.grid(row=0, column=1, columnspan=4, rowspan=2, padx=5, pady=5, sticky="w")
-button_sync_ip.grid(row=0, column=0)
-button_reset_ip.grid(row=1, column=0)
+label_proxy_ip.grid(row=0, column=2, columnspan=4, rowspan=2, sticky="w")
+button_sync_ip.grid(row=0, column=1, pady=5, sticky="nsew")
+button_reset_ip.grid(row=1, column=1, sticky="nsew")
 
-tk.Label(window, text="Add/Remove ProxyBlock (e.g., youtube):").grid(row=7, column=0, columnspan=2)
-entry_block.grid(row=8, column=1, columnspan=2, rowspan=2)
-button_add_block.grid(row=8, column=0)
-button_remove_block.grid(row=9, column=0)
+tk.Label(window, text="Add/Remove ProxyBlock (e.g., youtube):").grid(row=7, column=0, columnspan=2, pady=5)
+entry_block.grid(row=8, column=1, columnspan=2, rowspan=2, sticky="ew")
+button_add_block.grid(row=8, column=0, sticky="nsew", padx=5, pady=5)
+button_remove_block.grid(row=9, column=0, sticky="nsew", padx=5, pady=5)
 
-tk.Label(window, text="Blacklisted Domains:").grid(row=10, column=0, columnspan=2)
-query_blacklist_text.grid(row=11, column=0, columnspan=2, padx=5, pady=5, sticky="w")
+tk.Label(window, text="Blacklisted Domains:").grid(row=10, column=0, columnspan=2, pady=5)
+query_blacklist_text.grid(row=11, column=0, columnspan=2, padx=5, pady=5, sticky="nsew")
 
-tk.Label(window, text="Add IP (e.g., 127.0.0.1):").grid(row=7, column=4, columnspan=2)
-entry_ip.grid(row=8, column=5, columnspan=2, rowspan=2)
-button_add_ip.grid(row=8, column=4)
-button_remove_ip.grid(row=9, column=4)
+tk.Label(window, text="Add IP (e.g., 127.0.0.1):").grid(row=7, column=4, columnspan=2, pady=5)
+entry_ip.grid(row=8, column=5, columnspan=2, rowspan=2, sticky="ew")
+button_add_ip.grid(row=8, column=4, sticky="nsew", padx=5, pady=5)
+button_remove_ip.grid(row=9, column=4, sticky="nsew", padx=5, pady=5)
 
-tk.Label(window, text="Whitelisted Domains:").grid(row=10, column=4, columnspan=2,)
-query_whitelist_text.grid(row=11, column=4, columnspan=2, padx=5, pady=5, sticky="w")
+tk.Label(window, text="Whitelisted Domains:").grid(row=10, column=4, columnspan=2, pady=5)
+query_whitelist_text.grid(row=11, column=4, columnspan=2, padx=5, pady=5, sticky="nsew")
 
-tk.Label(window, text="Web Traffic:").grid(row=18, column=1, columnspan=2, pady=5)
-query_webtraffic_text.grid(row=19, column=0, columnspan=8, padx=5, pady=5, sticky="w")
-button_refresh_webtraffic.grid(row=18, column=2, columnspan=2, padx=5, pady=5, sticky="w")
+tk.Label(window, text="Web Traffic:").grid(row=18, column=1, columnspan=1, pady=5, sticky="e")
+query_webtraffic_text.grid(row=19, column=0, columnspan=8, padx=5, pady=5, sticky="nsew")
+button_refresh_webtraffic.grid(row=18, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
 
 #===MAIN===#
 
