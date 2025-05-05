@@ -76,10 +76,18 @@ def on_button_click_add_block():
         return
 
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "a") as file:
-            file.write(f"  ProxyBlock {'.'+new_block+'.'}\n")
-        query_blacklist()
+        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+            lines = file.readlines()
 
+        # Check if the ProxyBlock already exists
+        if any(f"ProxyBlock .{new_block}." in line for line in lines):
+            print(f"ProxyBlock {new_block} already exists in the configuration.")
+            return
+
+        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "a") as file:
+            file.write(f"  ProxyBlock .{new_block}.\n")
+
+        query_blacklist()
         print(f"Added ProxyBlock for: {new_block}")
     except Exception as e:
         print(f"Error adding ProxyBlock: {e}")
@@ -113,6 +121,10 @@ def on_button_click_add_IP():
     try:
         with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
             lines = file.readlines()
+
+        if any(f"Allow from {new_ip}" in line for line in lines):
+            print(f"IP {new_ip} already exists in the configuration.")
+            return
 
         with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "w") as file:
             inside_proxy = False
@@ -222,6 +234,8 @@ def query_webtraffic():
 
     except Exception as e:
         print(f"Error querying web traffic: {e}")
+    
+    window.after(5000, query_webtraffic)
 
 def confirmation_popup(callback_yes, callback_no=None):
     popup = tk.Toplevel(window)
@@ -270,7 +284,7 @@ button_sync_ip.grid(row=0, column=1, pady=5, sticky="nsew")
 button_reset_ip.grid(row=1, column=1, sticky="nsew")
 
 tk.Label(window, text="Add/Remove ProxyBlock (e.g., youtube):").grid(row=7, column=0, columnspan=2, pady=5)
-entry_block.grid(row=8, column=1, columnspan=2, rowspan=2, sticky="ew")
+entry_block.grid(row=8, column=1, columnspan=1, rowspan=2, sticky="ew")
 button_add_block.grid(row=8, column=0, sticky="nsew", padx=5, pady=5)
 button_remove_block.grid(row=9, column=0, sticky="nsew", padx=5, pady=5)
 
