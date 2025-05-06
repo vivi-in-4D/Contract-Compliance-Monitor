@@ -48,7 +48,7 @@ class cuiHandler(PatternMatchingEventHandler):
 
     # Control Logging
     def logging_event(self, src_path, action, dest_path = None):
-        if (".vscode" not in src_path) or ("AppData" not in src_path): # likely not false positive
+        if (".vscode" not in src_path) and ("AppData" not in src_path): # likely not false positive
             if DEBUG_MODE:
                 print("[logging_setup] NOT APPDATA/vscode file")
             # log action
