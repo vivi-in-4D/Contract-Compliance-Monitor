@@ -3,6 +3,7 @@
 import tkinter as tk
 import socket as sc
 import re
+import os
 
 #===GLOBALS===#
 
@@ -35,10 +36,25 @@ def on_button_click_sync_ip():
     print("Your local IP is: " + local_ip)
 
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
             lines = file.readlines()
 
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "w") as file:
+        with open(proxy_conf_path, "w") as file:
             for line in lines:
                 if line.strip().startswith("Listen"):
                     file.write(f"Listen {local_ip}:8080\n")
@@ -53,10 +69,25 @@ def on_button_click_sync_ip():
 
 def on_button_click_reset_ip():
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
             lines = file.readlines()
 
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "w") as file:
+        with open(proxy_conf_path, "w") as file:
             for line in lines:
                 if line.strip().startswith("Listen"):
                     file.write("Listen 0.0.0.0:80\n")
@@ -76,7 +107,22 @@ def on_button_click_add_block():
         return
 
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
             lines = file.readlines()
 
         # Check if the ProxyBlock already exists
@@ -84,7 +130,7 @@ def on_button_click_add_block():
             print(f"ProxyBlock {new_block} already exists in the configuration.")
             return
 
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "a") as file:
+        with open(proxy_conf_path, "a") as file:
             file.write(f"  ProxyBlock .{new_block}.\n")
 
         query_blacklist()
@@ -99,10 +145,25 @@ def on_button_click_remove_block():
         return
 
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
             lines = file.readlines()
 
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "w") as file:
+        with open(proxy_conf_path, "w") as file:
             for line in lines:
                 if line.strip() != f"ProxyBlock .{remove_block}.":
                     file.write(line)
@@ -119,14 +180,29 @@ def on_button_click_add_IP():
         return
 
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
             lines = file.readlines()
 
         if any(f"Allow from {new_ip}" in line for line in lines):
             print(f"IP {new_ip} already exists in the configuration.")
             return
 
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "w") as file:
+        with open(proxy_conf_path, "w") as file:
             inside_proxy = False
             proxy_lines = []  # Temporary storage for lines inside the <Proxy *> block
 
@@ -161,10 +237,25 @@ def on_button_click_remove_IP():
         return
 
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
             lines = file.readlines()
 
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "w") as file:
+        with open(proxy_conf_path, "w") as file:
             for line in lines:
                 if line.strip() != f"Allow from {remove_ip}":
                     file.write(line)
@@ -183,7 +274,22 @@ def query_blacklist():
     query_blacklist_text.config(state=tk.NORMAL)
     query_blacklist_text.delete(1.0, tk.END)
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
             lines = file.readlines()
 
         for line in lines:
@@ -198,7 +304,22 @@ def query_whitelist():
     query_whitelist_text.config(state=tk.NORMAL)
     query_whitelist_text.delete(1.0, tk.END)
     try:
-        with open(r"E:\xampp\apache\conf\extra\httpd-proxy.conf", "r") as file:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
             lines = file.readlines()
 
         for line in lines:
@@ -213,8 +334,23 @@ def query_webtraffic():
     query_webtraffic_text.config(state=tk.NORMAL)
     query_webtraffic_text.delete(1.0, tk.END)
     try:
-        with open(r"E:\xampp\apache\logs\access.log", "r") as file:
-            lines = file.readlines()[::-1]  # Read lines in reverse order
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        log_path = os.path.join(xampp_path, "apache", "logs", "access.log")
+
+        if not os.path.exists(log_path):
+            raise FileNotFoundError(f"File not found: {log_path}")
+
+        with open(log_path, "r") as file:
+            lines = file.readlines()[::-1]  
 
         # Regular expression to parse log lines
         log_pattern = re.compile(
