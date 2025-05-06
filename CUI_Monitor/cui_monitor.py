@@ -17,7 +17,7 @@ fastest time: 1.0s on linux (fast)
 # 2 = Parent Parent Directory
 # 3 = Root Directory 
 MODE = 0
-DEBUG_MODE = True
+DEBUG_MODE = False
 SKIP_SETUP = False
 CUI_LOG_PATH = "cui_changes.log"
 ALL_LOG_PATH = "all_changes.log"
