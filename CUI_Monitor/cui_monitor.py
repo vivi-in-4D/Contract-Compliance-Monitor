@@ -7,47 +7,59 @@ from watchdog.observers import Observer
 from watchdog.events import *
 
 '''
-Other things worth adding or improving:
-1. HASH Database not hardcoded. (half/done)
-Currently, the hashes present to determine whether something is CUI is in the program itself.
-There is no way to change these currently, (if the file changes, CUI hashes will not change)
+Testing Data (Home Directory)
+fastest time: 729s on windows (slow)
+fastest time: 1.0s on linux (fast)
 '''
-
+# Get directory path and path of CUI
+# 0 = Home Directory, 
+# 1 = Parent Directory, 
+# 2 = Parent Parent Directory
+# 3 = Root Directory 
+MODE = 0
 DEBUG_MODE = False
-
-# Set up the logging file and format
-logging.basicConfig(
-    filename = "file_changes.log",
-    level = logging.INFO,
-    format = "%(asctime)s - %(message)s"
-)
+SKIP_SETUP = False
+CUI_LOG_PATH = "cui_changes.log"
+ALL_LOG_PATH = "all_changes.log"
 
 class cuiHandler(PatternMatchingEventHandler):
     def on_modified(self, event):
-        logging.info(f'Modified: {event.src_path}')
+        # log
+        self.logging_event(event.src_path, "Modified")
 
     def on_created(self, event):
         self.check_cui(event.src_path)
-        logging.info(f"Created: {event.src_path}")
+        # log
+        self.logging_event(event.src_path, "Created")
 
     def on_deleted(self, event):
-        logging.info(f"Deleted: {event.src_path}")
+        # log
+        self.logging_event(event.src_path, "Deleted")
 
     def on_moved(self, event):
-        logging.info(f"Moved: {event.src_path} to {event.dest_path}")
         # check to see if destination is in ignore and remove if so (solves undo problem)
         if event.dest_path in self.ignore_patterns:
             self.ignore_patterns.remove(event.dest_path)
-        try:
-            self.patterns.append(event.dest_path)
-            # self.patterns.remove(event.src_path)
-        except:
-            print("Source not in patterns")
-            self.patterns.append(event.dest_path)
-            # self.ignore_patterns.append(src_name)
+        self.logging_event(event.src_path, "Moved", dest_path=event.dest_path)
         # Print patterns for testing purposes
-        print(f"Patterns: {self.patterns}")
-        print(f"Ignored: {self.ignore_patterns}")
+        # if DEBUG_MODE:
+            # print(f"Patterns: {self.patterns}")
+            # print(f"Ignored: {self.ignore_patterns}")
+
+    # Control Logging
+    def logging_event(self, src_path, action, dest_path = None):
+        if (".vscode" not in src_path) or ("AppData" not in src_path): # likely not false positive
+            if DEBUG_MODE:
+                print("[logging_setup] NOT APPDATA/vscode file")
+            # log action
+            if action == "Moved":
+                cui_logger.info(f"{action}: {src_path} to {dest_path}")
+            else:
+                cui_logger.info(f"{action}: {src_path}")
+        if action == "Moved":
+            mass_logger.info(f"{action}: {src_path} to {dest_path}")
+        else:
+            mass_logger.info(f"{action}: {src_path}")
     
     # Into Non-watchdog functions 
     def setup_cui(self, dir_path):
@@ -79,26 +91,17 @@ class cuiHandler(PatternMatchingEventHandler):
             if DEBUG_MODE:
                 print("[setup_cui] This folder is not accessible.")
             pass
-        if DEBUG_MODE:
-            print(f"Patterns: {self.patterns}")
-            print(f"Ignored: {self.ignore_patterns}")
+        # if DEBUG_MODE:
+        #     print(f"Patterns: {self.patterns}")
+        #     print(f"Ignored: {self.ignore_patterns}")
 
     def check_cui(self, filename):
         cui_status = self.compare_hash(filename)
         if DEBUG_MODE:
             print(f"[check_cui] File: {filename}, CUI: {cui_status}")
         if (cui_status == False):
-            # in the setup_cui function run, it will check everything
-            # we only want to put things in ignore_patterns that are in patterns
-            # can try to be generalized by splicing the list
-            # or be specific with what we have right now
-            if (((".txt" in filename) or (".cui" in filename)) and ((".vscode" in filename) == False)): # specific case
-                if DEBUG_MODE:
-                    print(f"[check_cui] File: {filename} is FoI")
-                self.ignore_patterns.append(filename)
-        else: # file is cui
-            if ((".txt" not in filename) and (".cui" not in filename) and (".enc" not in filename)):
-                self.patterns.append(filename)
+            # under the new scheme, add anything not cui to ignore
+            self.ignore_patterns.append(filename)
     
     def sha3_sum(self, filename):
         # read in 64kb chunks, so we don't eat all the memory in the system
@@ -122,8 +125,7 @@ class cuiHandler(PatternMatchingEventHandler):
     def compare_hash(self, filename):
         sha3_hash = self.sha3_sum(filename)
         # This is where you put hashes of all CUI
-        cui_hashes = self.hashes
-        if sha3_hash in cui_hashes:
+        if sha3_hash in self.hashes:
             return True
         else:
             return False
@@ -137,9 +139,9 @@ class cuiHandler(PatternMatchingEventHandler):
             return cui_hashes
 
     # Important: Controls filter!
-    patterns = ["*.txt", "*.cui", "*.enc"]
-    ignore_patterns = ["file_changes.log","hashdatabase.txt"]
-    # ignore_directories = True
+    patterns = ["*"]
+    ignore_patterns = [CUI_LOG_PATH, ALL_LOG_PATH]
+    ignore_directories = True
     hashes = import_hashes()
     client_os = platform.system()
 
@@ -152,18 +154,27 @@ def monitor_setup(dir_path):
     elasped_time = stop_time - start_time
     print(f"[monitor_setup] The setup process took {elasped_time} seconds to complete.")
 
+def setup_logger(logger_name, file_name, level=logging.INFO):
+    log = logging.getLogger(logger_name)
+    formatter = logging.Formatter("%(asctime)s - %(message)s")
+    fileHandler = logging.FileHandler(file_name, mode='a')
+    fileHandler.setFormatter(formatter)
+
+    log.setLevel(level)
+    log.addHandler(fileHandler)
+
 # Set up the CUI monitor
 if __name__ == "__main__":
-    # Get directory path and path of CUI
-    # 0 = Home Directory, 
-    # 1 = Parent Directory, 
-    # 2 = Parent Parent Directory (testing)
-    MODE = 0 
-    SKIP_SETUP = False
+    # setup log files
+    setup_logger("cui_log", CUI_LOG_PATH)
+    setup_logger("mass_log", ALL_LOG_PATH)
+    cui_logger = logging.getLogger("cui_log")
+    mass_logger = logging.getLogger("mass_log")
 
     home_path = os.path.expanduser("~")
     directory_name = os.path.dirname(__file__)
     parent_directory = os.path.dirname(directory_name)
+    root_path = os.path.abspath('.').split(os.path.sep)[0]+os.path.sep # gets root path
 
     # Monitoring setup
     event_handler = cuiHandler()
@@ -174,6 +185,8 @@ if __name__ == "__main__":
         monitor_setup(directory_name)
     elif (MODE == 2):
         monitor_setup(parent_directory)
+    elif (MODE == 3):
+        monitor_setup(root_path)
     else:
         print("[Main] Error: Unknown Mode")  
 
