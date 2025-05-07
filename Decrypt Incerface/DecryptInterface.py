@@ -3,61 +3,38 @@
 import tkinter as tk
 from tkinter import messagebox
 import pymysql
-import os
-import re
 from aes256 import aes256
 
 #===GLOABLS===#
 
 fail_counter = 0
 
-def get_db_host():
-    for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
-        potential_path = f"{drive}:\\xampp\\apache\\conf\\extra\\httpd-proxy.conf"
-        if os.path.exists(potential_path):
-            proxy_conf_path = potential_path
-            break
-    else:
-        proxy_conf_path = r"e:\xampp\apache\conf\extra\httpd-proxy.conf"
-    try:
-        with open(proxy_conf_path, "r") as file:
-            for line in file:
-                # Match the "Listen" directive with an IP address
-                match = re.match(r"Listen\s+([\d\.]+):\d+", line)
-                if match:
-                    return match.group(1)  # Return the extracted IP address
-    except FileNotFoundError:
-        tk.messagebox.showerror("Error", f"File not found: {proxy_conf_path}")
-    except Exception as e:
-        tk.messagebox.showerror("Error", f"An error occurred while reading {proxy_conf_path}: {e}")
-    return "127.0.0.1"
-
-DB_HOST = get_db_host()
-
 window = tk.Tk()
 window.title("Decrypt Interface Login")
-window.geometry("450x100")
+window.geometry("450x120")
 window.resizable(False, False)
 
 button_login = tk.Button(window, text="Login", width=10, height=2, bg="gray", fg="white")
 
 entry_username = tk.Entry(window, width=20, bg="white", fg="black")
 entry_password = tk.Entry(window, width=20, bg="white", fg="black", show="*")
+entry_IP = tk.Entry(window, width=20, bg="white", fg="black")
 
 #===FUNCTIONS===#
 
 def on_click_login():
     password = entry_password.get()
     username = entry_username.get()
+    host = entry_IP.get()
 
     try:
         connection = pymysql.connect(
-            host=DB_HOST,
+            host=host,
             user=username,
             password=password,
             database="contract_compliance",
         )
-        login_successful(username, password)
+        login_successful(username, password, host)
         connection.close()
 
     except pymysql.MySQLError as e:
@@ -68,14 +45,14 @@ def on_click_login():
             window.destroy()
             tk.messagebox.showerror("Too many attempts", "You have been locked out due to too many failed login attempts.")
 
-def login_successful(username, password):
+def login_successful(username, password, host):
     window.withdraw()
     
     cui_files = []
     hashes_files = []
 
     connection = pymysql.connect(
-            host=DB_HOST,
+            host=host,
             user=username,
             password=password,
             database="contract_compliance",
@@ -152,11 +129,13 @@ button_login.config(command=on_click_login)
 
 #===GUI SETUP===#
 
-button_login.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+button_login.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
 tk.Label(window, text="Username:").grid(row=0, column=1, padx=10, pady=3, sticky="s")
 tk.Label(window, text="Password:").grid(row=0, column=2, padx=10, pady=3, sticky="s")
 entry_username.grid(row=1, column=1, rowspan=2, padx=10, pady=3, sticky="n")
 entry_password.grid(row=1, column=2, rowspan=2, padx=10, pady=3, sticky="n")
+tk.Label(window, text="Host IP:").grid(row=0, column=0, padx=10, pady=3, sticky="s")
+entry_IP.grid(row=1, column=0, rowspan=2, padx=10, pady=3, sticky="n")
 
 #===MAIN===#
 
