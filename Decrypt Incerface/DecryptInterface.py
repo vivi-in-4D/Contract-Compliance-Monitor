@@ -3,15 +3,36 @@
 import tkinter as tk
 from tkinter import messagebox
 import pymysql
-
+import os
+import re
 from aes256 import aes256
 
 #===GLOABLS===#
 
 fail_counter = 0
-DB_HOST = "138.47.150.225"
 
-# Need to add a way to dynamically search for the host IP
+def get_db_host():
+    for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+        potential_path = f"{drive}:\\xampp\\apache\\conf\\extra\\httpd-proxy.conf"
+        if os.path.exists(potential_path):
+            proxy_conf_path = potential_path
+            break
+    else:
+        proxy_conf_path = r"e:\xampp\apache\conf\extra\httpd-proxy.conf"
+    try:
+        with open(proxy_conf_path, "r") as file:
+            for line in file:
+                # Match the "Listen" directive with an IP address
+                match = re.match(r"Listen\s+([\d\.]+):\d+", line)
+                if match:
+                    return match.group(1)  # Return the extracted IP address
+    except FileNotFoundError:
+        tk.messagebox.showerror("Error", f"File not found: {proxy_conf_path}")
+    except Exception as e:
+        tk.messagebox.showerror("Error", f"An error occurred while reading {proxy_conf_path}: {e}")
+    return "127.0.0.1"
+
+DB_HOST = get_db_host()
 
 window = tk.Tk()
 window.title("Decrypt Interface Login")
@@ -82,6 +103,7 @@ def login_failed():
 
 def generate_query_window(cui_files, hashes_files, password):
     query_window = tk.Toplevel(window)
+    query_window.resizable(False, False)
     query_window.title("Decrypt Interface")
 
     query_window.protocol("WM_DELETE_WINDOW", window.quit)
