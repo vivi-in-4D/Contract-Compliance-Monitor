@@ -8,9 +8,11 @@ import pymysql
 
 fail_counter = 0
 
+# Need to add a way to dynamically search for the host IP
+
 window = tk.Tk()
 window.title("Decrypt Interface Login")
-window.geometry("900x600")
+window.geometry("450x100")
 window.resizable(False, False)
 
 button_login = tk.Button(window, text="Login", width=10, height=2, bg="gray", fg="white")
@@ -122,9 +124,11 @@ button_login.config(command=on_click_login)
 
 #===GUI SETUP===#
 
-button_login.grid(row=0, column=0, padx=10, pady=10)
-entry_username.grid(row=0, column=1, padx=10, pady=10)
-entry_password.grid(row=0, column=2, padx=10, pady=10)
+button_login.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
+tk.Label(window, text="Username:").grid(row=0, column=1, padx=10, pady=3, sticky="s")
+tk.Label(window, text="Password:").grid(row=0, column=2, padx=10, pady=3, sticky="s")
+entry_username.grid(row=1, column=1, rowspan=2, padx=10, pady=3, sticky="n")
+entry_password.grid(row=1, column=2, rowspan=2, padx=10, pady=3, sticky="n")
 
 #===MAIN===#
 
