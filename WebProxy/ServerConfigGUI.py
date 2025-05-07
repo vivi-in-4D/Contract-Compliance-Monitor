@@ -12,7 +12,36 @@ window.title("PROXY SERVER CONFIGURATION")
 window.geometry("900x600")
 window.resizable(False, False)
 
-label_proxy_ip = tk.Label(window, text="Your Current Proxy IP is 0.0.0.0 on port 80")
+def IP_search():
+    try:
+        xampp_path = None
+        for drive in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            potential_path = f"{drive}:\\xampp"
+            if os.path.exists(potential_path):
+                xampp_path = potential_path
+                break
+
+        if not xampp_path:
+            raise FileNotFoundError("XAMPP installation directory not found.")
+
+        proxy_conf_path = os.path.join(xampp_path, "apache", "conf", "extra", "httpd-proxy.conf")
+
+        if not os.path.exists(proxy_conf_path):
+            raise FileNotFoundError(f"File not found: {proxy_conf_path}")
+
+        with open(proxy_conf_path, "r") as file:
+            lines = file.readlines()
+
+        for line in lines:
+            if line.strip().startswith("Listen"):
+                return line.strip().split()[1]
+
+    except Exception as e:
+        print(f"Error finding IP: {e}")
+
+CURRENT_IP = IP_search()
+
+label_proxy_ip = tk.Label(window, text=f"Your Current Proxy IP is {CURRENT_IP}:")
 button_sync_ip = tk.Button(window, text="Sync IP")
 button_reset_ip = tk.Button(window, text="Reset IP")
 button_add_block = tk.Button(window, text="Add ProxyBlock")
@@ -28,6 +57,7 @@ entry_block = tk.Entry(window)
 entry_ip = tk.Entry(window)
 
 #===FUNCTIONS===#
+
 
 def on_button_click_sync_ip():
     s = sc.socket(sc.AF_INET, sc.SOCK_DGRAM)
@@ -65,7 +95,7 @@ def on_button_click_sync_ip():
     except Exception as e:
         print(f"Error updating Listen directive: {e}")
 
-    label_proxy_ip.config(text="Your Current Proxy IP is: " +  local_ip + " on port 8080")
+    label_proxy_ip.config(text="Your Current Proxy IP is: " +  local_ip + ":8080")
 
 def on_button_click_reset_ip():
     try:
@@ -98,7 +128,7 @@ def on_button_click_reset_ip():
     except Exception as e:
         print(f"Error updating Listen directive: {e}")
     
-    label_proxy_ip.config(text="Your Proxy IP has been reset to 0.0.0.0 on port 80")
+    label_proxy_ip.config(text="Your Proxy IP has been reset to 0.0.0.0:80")
 
 def on_button_click_add_block():
     new_block = entry_block.get()
