@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SFTP Login</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="sftp-client.js"></script>
+</head>
+<body>
+    <div class="login_container">
+        <h1>SFTP Connection</h1>
+        <form id="sftp_form" onsubmit="connectSFTP(event)">
+            <!-- Constant IP address (hidden field) -->
+            <div class="form-group">
+                <label for="sftp-username">Username:</label>
+                <input type="text" id="sftp-username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="sftp-password">Password:</label>
+                <input type="password" id="sftp-password" name="password" required>
+            </div>
+            
+            <button type="submit">Connect to SFTP</button>
+        </form>
+        <div id="connection-status"></div>
+    </div>
+</body>
+</html>
