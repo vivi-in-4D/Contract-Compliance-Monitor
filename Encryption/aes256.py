@@ -18,9 +18,9 @@ AES256 encryption and decryption given a...
 
 # get a string password, string IV
 # sample values for testing
-PASSWORD = "a_password"
-IV = "bb90eb1b8669ba5f65c93e526d413150"
-INPUT_FILE = "text.txt"
+PASSWORD = "password"
+IV = "2b6718d03c32ed72cddb8a88ef1c5d60"
+INPUT_FILE = "bluecui"
 # INPUT_FILE = "enc_P1cui.txt"
 ENC_INPUT_FILE = "enc_text.txt"
 
@@ -58,10 +58,12 @@ def aes256(mode, input_path, password, iv):
         try:
             input_spliced = input_path.split("enc_")
             output_path = f"{input_spliced[1]}"
-        except:
-            input_spliced = input_path.split(".")
-            output_path = f"{input_spliced[0]}-1.{input_spliced[1]}"
-    
+        except: # if file ext
+            try:
+                input_spliced = input_path.split(".")
+                output_path = f"{input_spliced[0]}-1.{input_spliced[1]}"
+            except: # no file-ext
+                output_path = f"{input_path}-1"
     # byteread
     key_bytes = input_bytes = iv_bytes = None
     try:
@@ -103,5 +105,5 @@ def aes256(mode, input_path, password, iv):
 
 if __name__ == "__main__":
     print(INPUT_FILE)
-    # aes256("enc", INPUT_FILE, PASSWORD, IV)
-    aes256("dec", ENC_INPUT_FILE, PASSWORD, IV)
+    aes256("enc", INPUT_FILE, PASSWORD, IV)
+    # aes256("dec", ENC_INPUT_FILE, PASSWORD, IV)
