@@ -24,38 +24,38 @@ ALL_LOG_PATH = "all_changes.log"
 
 class cuiHandler(PatternMatchingEventHandler):
     def on_modified(self, event):
-        # log
         self.logging_event(event.src_path, "Modified")
 
     def on_created(self, event):
-        self.check_cui(event.src_path)
-        # log
-        self.logging_event(event.src_path, "Created")
+        if self.compare_hash(event.src_path):
+            self.logging_event(event.src_path, "Created")
+        else:
+            if ("/.goutputstream" not in event.src_path):
+                self.ignore_patterns.append(event.src_path)
 
     def on_deleted(self, event):
-        # log
         self.logging_event(event.src_path, "Deleted")
 
     def on_moved(self, event):
-        # check to see if destination is in ignore and remove if so (solves undo problem)
-        if event.dest_path in self.ignore_patterns:
-            self.ignore_patterns.remove(event.dest_path)
-        self.logging_event(event.src_path, "Moved", dest_path=event.dest_path)
-        # Print patterns for testing purposes
-        # if DEBUG_MODE:
-            # print(f"Patterns: {self.patterns}")
-            # print(f"Ignored: {self.ignore_patterns}")
+            # check to see if destination is in ignore and remove if so (solves hide problem)
+            if event.dest_path in self.ignore_patterns:
+                self.ignore_patterns.remove(event.dest_path)
+            self.logging_event(event.src_path, "Moved", dest_path=event.dest_path)
 
     # Control Logging
     def logging_event(self, src_path, action, dest_path = None):
-        if (".vscode" not in src_path) and ("AppData" not in src_path): # likely not false positive
+        if (".vscode" not in src_path) and ("AppData" not in src_path) and ("/.config/Code/" not in src_path) and ("/.local/share/" not in src_path): # common false positive
             if DEBUG_MODE:
-                print("[logging_setup] NOT APPDATA/vscode file")
+                print(f"[logging_event] {src_path} NOT APPDATA/vscode file")
             # log action
             if action == "Moved":
-                cui_logger.info(f"{action}: {src_path} to {dest_path}")
+                if ("/.goutputstream" in src_path) and (dest_path not in self.cui):
+                    pass
+                else:
+                    cui_logger.info(f"{action}: {src_path} to {dest_path}")
             else:
-                cui_logger.info(f"{action}: {src_path}")
+                if ("/.goutputstream" not in src_path):
+                    cui_logger.info(f"{action}: {src_path}")
         if action == "Moved":
             mass_logger.info(f"{action}: {src_path} to {dest_path}")
         else:
@@ -85,22 +85,25 @@ class cuiHandler(PatternMatchingEventHandler):
                         print(f"[setup_cui] {file} is directory")
                         print(f"[setup_cui] {file_path} is directory path")
                     self.setup_cui(file_path) # recursion to cover folders in folders
-                else:
+                else: # a file
                     self.check_cui(os.path.abspath(file_path))
         except:
             if DEBUG_MODE:
                 print("[setup_cui] This folder is not accessible.")
             pass
-        # if DEBUG_MODE:
-        #     print(f"Patterns: {self.patterns}")
-        #     print(f"Ignored: {self.ignore_patterns}")
 
     def check_cui(self, filename):
-        cui_status = self.compare_hash(filename)
-        if DEBUG_MODE:
-            print(f"[check_cui] File: {filename}, CUI: {cui_status}")
-        if (cui_status == False):
-            # under the new scheme, add anything not cui to ignore
+        if ("/.config/Code/" not in filename):
+            # compare hash is gatekeeper of hashing
+            cui_status = self.compare_hash(filename)
+            if DEBUG_MODE:
+                print(f"[check_cui] File: {filename}, CUI: {cui_status}")
+            if (cui_status == False):
+                # under the new scheme, add anything not cui to ignore
+                self.ignore_patterns.append(filename)
+            else:
+                self.cui.append(filename)
+        else:
             self.ignore_patterns.append(filename)
     
     def sha3_sum(self, filename):
@@ -141,6 +144,7 @@ class cuiHandler(PatternMatchingEventHandler):
     # Important: Controls filter!
     patterns = ["*"]
     ignore_patterns = [CUI_LOG_PATH, ALL_LOG_PATH]
+    cui = []
     ignore_directories = True
     hashes = import_hashes()
     client_os = platform.system()
