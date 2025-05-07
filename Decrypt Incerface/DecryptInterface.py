@@ -2,13 +2,11 @@
 
 import tkinter as tk
 from tkinter import messagebox
-import socket as sc
 import pymysql
 
 #===GLOABLS===#
 
 fail_counter = 0
-generated_key = None
 
 window = tk.Tk()
 window.title("Decrypt Interface Login")
@@ -98,6 +96,14 @@ def generate_query_window(cui_files, hashes_files, password):
         selected_file = file_listbox.get(tk.ACTIVE)
         if selected_file:
             tk.messagebox.showinfo("Download", f"Downloading {selected_file}")
+            for file in cui_files:
+                if selected_file == file[0]:
+                    with open(f"{file[0]}_IV", "w") as f:
+                        f.write(f"{file[1]}".strip(" "))
+                    tk.messagebox.showinfo("Download", f"{selected_file} downloaded successfully.")
+                    file_decryptor(file[1], password)
+                    break
+
             
         else:
             tk.messagebox.showwarning("Please select a file to download.")
@@ -106,7 +112,7 @@ def generate_query_window(cui_files, hashes_files, password):
     button_download.grid(row=2, column=0, padx=10, pady=10)
 
     #THIS FUNCTION NEEDS TO BE IMPLEMENTED
-def file_decryptor(file, password):
+def file_decryptor(IV, password):
     pass
 
 
