@@ -4,9 +4,12 @@ import tkinter as tk
 from tkinter import messagebox
 import pymysql
 
+from aes256 import aes256
+
 #===GLOABLS===#
 
 fail_counter = 0
+DB_HOST = "138.47.150.225"
 
 # Need to add a way to dynamically search for the host IP
 
@@ -28,7 +31,7 @@ def on_click_login():
 
     try:
         connection = pymysql.connect(
-            host="138.47.148.170",
+            host=DB_HOST,
             user=username,
             password=password,
             database="contract_compliance",
@@ -51,7 +54,7 @@ def login_successful(username, password):
     hashes_files = []
 
     connection = pymysql.connect(
-            host="138.47.148.170",
+            host=DB_HOST,
             user=username,
             password=password,
             database="contract_compliance",
@@ -98,24 +101,27 @@ def generate_query_window(cui_files, hashes_files, password):
         selected_file = file_listbox.get(tk.ACTIVE)
         if selected_file:
             tk.messagebox.showinfo("Download", f"Downloading {selected_file}")
+            print(f"Selected file: {selected_file}")
+            print(type(selected_file))
             for file in cui_files:
                 if selected_file == file[0]:
-                    with open(f"{file[0]}_IV", "w") as f:
-                        f.write(f"{file[1]}".strip(" "))
+                    # with open(f"{file[0]}_IV", "w") as f:
+                    #     f.write(f"{file[1]}".strip(" "))
                     tk.messagebox.showinfo("Download", f"{selected_file} downloaded successfully.")
-                    file_decryptor(file[1], password)
-                    break
-
-            
+                    file_decryptor(file[1], password, selected_file)
+                    break     
         else:
             tk.messagebox.showwarning("Please select a file to download.")
 
     button_download = tk.Button(query_window, text="Download", width=10, height=2, bg="gray", fg="white", command=download_file)
     button_download.grid(row=2, column=0, padx=10, pady=10)
 
-    #THIS FUNCTION NEEDS TO BE IMPLEMENTED
-def file_decryptor(IV, password):
-    pass
+#THIS FUNCTION NEEDS TO BE IMPLEMENTED
+def file_decryptor(IV, password, input_file):
+    try:
+        aes256("dec", input_file, password, IV)
+    except:
+        tk.messagebox.showerror("Error!", f"Cannot find cui: {input_file}")
 
 
 #===BUTTON CONFIGS===#
