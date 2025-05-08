@@ -1,5 +1,5 @@
 // Constants
-const SFTP_IP = '0.0.0.0';
+const SFTP_IP = '138.47.136.175';
 const SFTP_PORT = 22
 
 async function connectSFTP(event) {
