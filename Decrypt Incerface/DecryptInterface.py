@@ -107,7 +107,7 @@ def generate_query_window(cui_files, hashes_files, password):
                     # with open(f"{file[0]}_IV", "w") as f:
                     #     f.write(f"{file[1]}".strip(" "))
                     tk.messagebox.showinfo("Download", f"{selected_file} downloaded successfully.")
-                    file_decryptor(file[1], password, selected_file)
+                    file_decryptor(file[1], password, "enc_"+selected_file)
                     break     
         else:
             tk.messagebox.showwarning("Please select a file to download.")

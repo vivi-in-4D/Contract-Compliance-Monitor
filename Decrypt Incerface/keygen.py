@@ -13,10 +13,7 @@ def main():
     args = parser.parse_args()
 
     key = generate_key(args.passphrase)
-
-    with open(args.output, "w") as f:
-        f.write(key)
-    print(f"Key written to {args.output}")
+    print(key)
 
 if __name__ == "__main__":
     main()

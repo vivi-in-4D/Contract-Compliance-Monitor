@@ -17,7 +17,8 @@ result = cursor.fetchone()
 
 if result[0] > 0:
     # IF CUI_NAME EXISTS, UPDATE THE IV
-    cursor.execute(f"UPDATE {group_name}_cui SET IV = {iv} WHERE cui_name = '{cui_name}';")
+    query = f"UPDATE `{group_name}_cui` SET `IV` = %s WHERE `cui_name` = %s;"
+    cursor.execute(query, (iv, cui_name))
     connection.commit()
 
 else:
