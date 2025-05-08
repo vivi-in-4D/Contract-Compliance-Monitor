@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SFTP Browser</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        .panels { display: flex; gap: 20px; margin-top: 20px; }
+        .panel { flex: 1; border: 1px solid #ccc; padding: 15px; border-radius: 5px; }
+        .file-list { margin-top: 10px; }
+        .file-item, .dir-item { padding: 5px; cursor: pointer; }
+        .file-item:hover, .dir-item:hover { background-color: #f0f0f0; }
+        .upload-area { 
+            border: 2px dashed #ccc; 
+            padding: 20px; 
+            text-align: center; 
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        .upload-area.active { border-color: #4CAF50; }
+        #disconnect-btn { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>SFTP Browser</h1>
+    
+    <div class="panels">
+        <!-- Download Panel -->
+        <div class="panel">
+            <h2>Download Files</h2>
+            <div id="download-list" class="file-list"></div>
+        </div>
+        
+        <!-- Upload Panel -->
+        <div class="panel">
+            <h2>Upload Files</h2>
+            <div id="upload-dirs" class="file-list"></div>
+            <div id="upload-area" class="upload-area">
+                <p>Drag & drop files here or click to select</p>
+                <input type="file" id="file-input" style="display: none;">
+            </div>
+            <button id="upload-btn" disabled>Upload</button>
+        </div>
+    </div>
+    
+    <button id="disconnect-btn">Disconnect</button>
+
+    <script>
+        let sessionId = null;
+        let selectedUploadDir = null;
+        let selectedFile = null;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            sessionId = localStorage.getItem('sftp_sessionId');
+            if (!sessionId) {
+                window.location.href = '/';
+                return;
+            }
+
+            await loadDownloadFiles();
+            await loadUploadDirs();
+            setupUploadArea();
+            
+            document.getElementById('disconnect-btn').addEventListener('click', disconnect);
+        });
+
+        // Load all downloadable files
+        async function loadDownloadFiles() {
+            try {
+                const response = await fetch('/sftp_list_downloads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.message || 'Failed to load files');
+                }
+                
+                const data = await response.json();
+                if (data.success) {
+                    renderDownloadFiles(data.files);
+                } else {
+                    throw new Error(data.message || 'Failed to load files');
+                }
+            } catch (err) {
+                console.error('Error loading files:', err);
+                document.getElementById('download-list').innerHTML = 
+                    `<div class="error">Some files not available due to permission restrictions</div>`;
+            }
+        }
+
+        // Render downloadable files
+        function renderDownloadFiles(files) {
+            const container = document.getElementById('download-list');
+            container.innerHTML = '';
+            
+            files.forEach(file => {
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.textContent = `${file.dirPath}/${file.name}`;
+                div.onclick = () => downloadFile(file.fullPath);
+                container.appendChild(div);
+            });
+        }
+
+        // Download a file
+        async function downloadFile(filePath) {
+            try {
+                const response = await fetch('/sftp_download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, filePath })
+                });
+                
+                if (!response.ok) throw new Error('Download failed');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filePath.split('/').pop();
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (err) {
+                alert('Download failed: ' + err.message);
+            }
+        }
+
+        // Load upload directories
+        async function loadUploadDirs() {
+            try {
+                const response = await fetch('/sftp_list_uploads', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    renderUploadDirs(data.directories);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Failed to load directories: ' + err.message);
+            }
+        }
+
+        // Render upload directories
+        function renderUploadDirs(dirs) {
+            const container = document.getElementById('upload-dirs');
+            container.innerHTML = '';
+            
+            dirs.forEach(dir => {
+                const div = document.createElement('div');
+                div.className = 'dir-item';
+                div.textContent = dir.name;
+                div.onclick = () => {
+                    selectedUploadDir = dir.name;
+                    document.querySelectorAll('.dir-item').forEach(el => {
+                        el.style.backgroundColor = '';
+                    });
+                    div.style.backgroundColor = '#e0e0e0';
+                    document.getElementById('upload-btn').disabled = !selectedFile;
+                };
+                container.appendChild(div);
+            });
+        }
+
+        // Setup drag and drop upload
+        function setupUploadArea() {
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('file-input');
+            const uploadBtn = document.getElementById('upload-btn');
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    selectedFile = e.target.files[0];
+                    uploadArea.innerHTML = `<p>Selected: ${selectedFile.name}</p>`;
+                    uploadBtn.disabled = !selectedUploadDir;
+                }
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('active');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('active');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('active');
+                
+                if (e.dataTransfer.files.length) {
+                    selectedFile = e.dataTransfer.files[0];
+                    uploadArea.innerHTML = `<p>Selected: ${selectedFile.name}</p>`;
+                    uploadBtn.disabled = !selectedUploadDir;
+                }
+            });
+            
+            uploadBtn.addEventListener('click', async () => {
+                if (!selectedUploadDir || !selectedFile) return;
+                
+                try {
+                    uploadBtn.disabled = true;
+                    uploadBtn.textContent = 'Uploading...';
+                    
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        try {
+                            const response = await fetch(
+                                `/sftp_upload?sessionId=${encodeURIComponent(sessionId)}&directory=${encodeURIComponent(selectedUploadDir)}&filename=${encodeURIComponent(selectedFile.name)}`, 
+                                {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/octet-stream'
+                                    },
+                                    body: e.target.result
+                                }
+                            );
+                            
+                            if (!response.ok) {
+                                const error = await response.json().catch(() => ({}));
+                                throw new Error(error.message || 'Upload failed');
+                            }
+                            
+                            alert('File uploaded successfully!');
+                        } catch (err) {
+                            console.error('Upload error:', err);
+                            alert('Upload failed: ' + (err.message || 'Unknown error'));
+                        } finally {
+                            uploadBtn.disabled = false;
+                            uploadBtn.textContent = 'Upload';
+                        }
+                    };
+                    reader.readAsArrayBuffer(selectedFile);
+                } catch (err) {
+                    console.error('Upload error:', err);
+                    alert('Upload failed: ' + err.message);
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Upload';
+                }
+            });
+        }
+
+        // Disconnect from SFTP
+        async function disconnect() {
+            try {
+                await fetch('/sftp_disconnect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId })
+                });
+                
+                localStorage.removeItem('sftp_sessionId');
+                window.location.href = '/';
+            } catch (err) {
+                alert('Disconnect failed: ' + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
