@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SFTP Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { width: 300px; padding: 20px; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 8px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        #connection-status { margin-top: 15px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>SFTP Connection</h1>
+        <form id="sftp_form" onsubmit="connectSFTP(event)">
+            <div class="form-group">
+                <label for="sftp_username">Username:</label>
+                <input type="text" id="sftp_username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="sftp_password">Password:</label>
+                <input type="password" id="sftp_password" required>
+            </div>
+            
+            <button type="submit">Connect to SFTP</button>
+        </form>
+        <div id="connection-status"></div>
+    </div>
+
+    <script>
+        async function connectSFTP(event) {
+            event.preventDefault();
+            const statusElement = document.getElementById('connection-status');
+            statusElement.textContent = "Connecting...";
+            statusElement.style.color = "blue";
+
+            try {
+                const response = await fetch('/sftp_connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        host: '138.47.136.175',
+                        username: document.getElementById('sftp_username').value,
+                        password: document.getElementById('sftp_password').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('sftp_sessionId', data.sessionId);
+                    window.location.href = '/sftp_browser';
+                } else {
+                    throw new Error(data.message || "Connection failed");
+                }
+            } catch (error) {
+                statusElement.textContent = "Error: " + error.message;
+                statusElement.style.color = "red";
+                console.error("Connection failed:", error);
+            }
+        }
+    </script>
+</body>
+</html>     
