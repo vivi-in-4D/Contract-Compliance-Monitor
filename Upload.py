@@ -25,7 +25,6 @@ if result[0] > 0:
 else:
     #INSERTS NEW CUI INTO THE DATABASE
     cursor.execute(f"INSERT INTO `{group_name}_cui` (`cui_name`, `IV`) VALUES ('{cui_name}', '{iv}');")
-    
 cursor.execute(f"INSERT INTO `c_hashes` (`cui_hash`) VALUES ('{pre_hash}');")
 cursor.execute(f"INSERT INTO `c_hashes` (`cui_hash`) VALUES ('{post_hash}');")
 

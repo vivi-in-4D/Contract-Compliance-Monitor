@@ -12,7 +12,7 @@ connection = pymysql.connect(
 
 cursor = connection.cursor()
 
-cursor.execute(f"SELECT 'pass_hash' FROM 'pass_hashes' WHERE 'group_name' = '{group_name,}'")
+cursor.execute("SELECT pass_hash FROM pass_hashes WHERE group_name = %s", (group_name,))
 
 result = cursor.fetchone()
 
