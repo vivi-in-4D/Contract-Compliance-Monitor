@@ -7,7 +7,7 @@ const crypto = require('crypto');
 
 const HOME_PAGE = 'home.html';
 
-// SSL Certificate Configuration
+// SSL certificate config
 const sslOptions = {
     key: fs.readFileSync('server.key'),    // Path to your private key
     cert: fs.readFileSync('server.cert')  // Path to your certificate
@@ -51,7 +51,7 @@ const requestHandler = (req, res) => {
         return;
     }
 
-    // Static file handling
+    // static file handling
     let filepath = '.' + req.url;
     if (filepath === './') filepath = './' + HOME_PAGE;
 
@@ -83,7 +83,7 @@ const requestHandler = (req, res) => {
     });
 };
 
-// Create both HTTP and HTTPS servers
+// create both http and https servers
 const httpServer = http.createServer(requestHandler);
 const httpsServer = https.createServer(sslOptions, requestHandler);
 
@@ -97,11 +97,3 @@ httpServer.listen(HTTP_PORT, () => {
 httpsServer.listen(HTTPS_PORT, () => {
     console.log(`HTTPS server running on port ${HTTPS_PORT}`);
 });
-
-// Optional: Redirect HTTP to HTTPS
-http.createServer((req, res) => {
-    res.writeHead(301, { 
-        'Location': `https://${req.headers.host.replace(/:\d+/, '')}:${HTTPS_PORT}${req.url}` 
-    });
-    res.end();
-}).listen(80);
