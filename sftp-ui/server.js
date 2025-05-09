@@ -23,7 +23,6 @@ const server = http.createServer((req, res) => {
             let pythonKey = '';
 
             pythonGen.stdout.on('data', (data) => {
-                console.log(`Python stdout: ${data.toString().trim()}`);
                 pythonKey += data.toString();
             });
 
@@ -32,7 +31,7 @@ const server = http.createServer((req, res) => {
 
                 // Spawn the Bash script
                 const scriptPath = path.resolve(__dirname, 'Encrypt.sh');
-                const child = spawn('bash', [scriptPath, hashedPassphrase, file_name, group_name]);
+                const child = spawn('bash', [scriptPath, hashedPassphrase, file_name, group_name, pythonKey]);
 
                 child.stdout.on('data', (data) => {
                     console.log(`Bash stdout: ${data.toString().trim()}`);
