@@ -19,22 +19,102 @@
         }
         .upload-area.active { border-color: #4CAF50; }
         #disconnect-btn { margin-top: 20px; }
+        .file-list-container {
+        height: 400px;
+        overflow-y: auto; /* vertical scrollbar */
+        border: 1px solid #ddd; /* border */
+        border-radius: 4px; /* rounded corners */
+        margin-top: 10px;
+        padding: 5px;
+        background-color: #f9f9f9; /* Light background */
+    }
+    
+    .file-list-container::-webkit-scrollbar {
+        width: 10px;
+    }
+    
+    .file-list-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    .file-list-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 5px;
+    }
+    
+    .file-list-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    .upload-area {
+        max-height: 200px; /* Adjust as needed */
+        overflow-y: auto;
+    }
+
+    /* scrollable containers */
+    .scrollable-container {
+        height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        margin: 10px 0;
+        background: #f8f8f8;
+        position: relative; /* for absolute positioning inside */
+    }
+
+    /* force scrollbars to always show (optional) */
+    .scrollable-container {
+        overflow-y: scroll;
+    }
+
+    /* file list items */
+    .file-list {
+        padding: 5px;
+    }
+
+    .file-item, .dir-item {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+    }
+
+    /* scrollbar styling (works in Chrome/Edge/Safari) */
+    .scrollable-container::-webkit-scrollbar {
+        width: 12px;
+    }
+
+    .scrollable-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .scrollable-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+        border: 3px solid #f1f1f1;
+    }
+
+    .scrollable-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
     </style>
 </head>
 <body>
     <h1>SFTP Browser</h1>
     
     <div class="panels">
-        <!-- Download Panel -->
+        <!-- download Panel -->
         <div class="panel">
             <h2>Download Files</h2>
-            <div id="download-list" class="file-list"></div>
+            <div class="scrollable-container">
+                <div id="download-list" class="file-list"></div>
+            </div>
         </div>
         
-        <!-- Upload Panel -->
+        <!-- ipload Panel -->
         <div class="panel">
             <h2>Upload Files</h2>
-            <div id="upload-dirs" class="file-list"></div>
+            <div class="scrollable-container">
+                <div id="upload-dirs" class="file-list"></div>
+            </div>
             <div id="upload-area" class="upload-area">
                 <p>Drag & drop files here or click to select</p>
                 <input type="file" id="file-input" style="display: none;">
@@ -50,7 +130,7 @@
         let selectedUploadDir = null;
         let selectedFile = null;
 
-        // Initialize on page load
+        // initialize on page load
         document.addEventListener('DOMContentLoaded', async () => {
             sessionId = localStorage.getItem('sftp_sessionId');
             if (!sessionId) {
@@ -65,7 +145,7 @@
             document.getElementById('disconnect-btn').addEventListener('click', disconnect);
         });
 
-        // Load all downloadable files
+        // load all downloadable files
         async function loadDownloadFiles() {
             try {
                 const response = await fetch('/sftp_list_downloads', {
@@ -92,10 +172,15 @@
             }
         }
 
-        // Render downloadable files
+        // render downloadable files
         function renderDownloadFiles(files) {
             const container = document.getElementById('download-list');
-            container.innerHTML = '';
+            container.innerHTML = ''; // Clear existing
+            
+            if (files.length === 0) {
+                container.innerHTML = '<div class="no-files">No files available</div>';
+                return;
+            }
             
             files.forEach(file => {
                 const div = document.createElement('div');
@@ -106,7 +191,7 @@
             });
         }
 
-        // Download a file
+        // download a file
         async function downloadFile(filePath) {
             try {
                 const response = await fetch('/sftp_download', {
@@ -131,7 +216,7 @@
             }
         }
 
-        // Load upload directories
+        // load upload directories
         async function loadUploadDirs() {
             try {
                 const response = await fetch('/sftp_list_uploads', {
@@ -151,7 +236,7 @@
             }
         }
 
-        // Render upload directories
+        // render upload directories
         function renderUploadDirs(dirs) {
             const container = document.getElementById('upload-dirs');
             container.innerHTML = '';
@@ -172,7 +257,7 @@
             });
         }
 
-        // Setup drag and drop upload
+        // setup drag and drop upload
         function setupUploadArea() {
             const uploadArea = document.getElementById('upload-area');
             const fileInput = document.getElementById('file-input');
@@ -253,7 +338,7 @@
             });
         }
 
-        // Disconnect from SFTP
+        // disconnect from SFTP
         async function disconnect() {
             try {
                 await fetch('/sftp_disconnect', {
