@@ -1,30 +1,53 @@
-const http  = require('http');
-const fs    = require('fs');
-const path  = require('path');
-const Client = require('ssh2-sftp-client');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const { spawn } = require('child_process');
+const crypto = require('crypto');
 
 const HOME_PAGE = 'home.html';
 
 const server = http.createServer((req, res) => {
     console.log(`Request for ${req.url} received`);
 
-    if (req.method === 'POST' && req.url === '/sftp_connect') {
+    if (req.method === 'POST' && req.url === '/sendGroupPass') {
         let body = '';
         req.on('data', chunk => body += chunk);
-        req.on('end', async () => {
-            try {
-                const { host, username, password } = JSON.parse(body);
-                const sftp = new Client();
-                await sftp.connect({ host, username, password });
-                const cwd = await sftp.cwd();
-                await sftp.end();
+        req.on('end', () => {
+            const { group_pass, group_name, file_name } = JSON.parse(body);
 
-                res.writeHead(200, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: true, cwd }));
-            } catch (err) {
-                res.writeHead(500, { 'Content-Type': 'application/json' });
-                res.end(JSON.stringify({ success: false, message: err.message }));
-            }
+            // Hash the passphrase
+            const hashedPassphrase = crypto.createHash('sha3-256').update(group_pass).digest('hex');
+
+            // Spawn the Python script
+            const pythonGen = spawn('python3', ['keygen.py', group_pass]);
+            let pythonKey = '';
+
+            pythonGen.stdout.on('data', (data) => {
+                console.log(`Python stdout: ${data.toString().trim()}`);
+                pythonKey += data.toString();
+            });
+
+            pythonGen.on('close', (code) => {
+                console.log(`Python script exited with code ${code}`);
+
+                // Spawn the Bash script
+                const scriptPath = path.resolve(__dirname, 'Encrypt.sh');
+                const child = spawn('bash', [scriptPath, hashedPassphrase, file_name, group_name]);
+
+                child.stdout.on('data', (data) => {
+                    console.log(`Bash stdout: ${data.toString().trim()}`);
+                });
+
+                child.stderr.on('data', (data) => {
+                    console.error(`Bash stderr: ${data.toString().trim()}`);
+                });
+
+                child.on('close', (code) => {
+                    console.log(`Encrypt.sh exited with code ${code}`);
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.end(JSON.stringify({ success: true, code }));
+                });
+            });
         });
         return;
     }
