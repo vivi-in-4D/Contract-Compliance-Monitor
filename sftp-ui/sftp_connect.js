@@ -3,8 +3,16 @@ const Client = require('ssh2-sftp-client');
 const app = express();
 const bodyParser = require('body-parser');
 const path = require('path');
+const https = require('https');
+const fs = require('fs');
 
-const HTML_DIRECTORY = 'public' // this directory houses our html files
+const HTML_DIRECTORY = 'public'; // this directory houses our html files
+
+// HTTPS configuration - replace with your actual certificate paths
+const sslOptions = {
+    key: fs.readFileSync('server.key'),
+    cert: fs.readFileSync('server.cert')
+};
 
 app.use(bodyParser.json());
 app.use(express.static(HTML_DIRECTORY));
@@ -193,4 +201,17 @@ app.get('/', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Create HTTPS server
+https.createServer(sslOptions, app).listen(PORT, () => {
+    console.log(`HTTPS Server running on https://localhost:${PORT}`);
+});
+
+// Optional: Create HTTP server that redirects to HTTPS
+const http = require('http');
+http.createServer((req, res) => {
+    res.writeHead(301, { 'Location': `https://localhost:${PORT}${req.url}` });
+    res.end();
+}).listen(3001, () => {
+    console.log(`HTTP redirect server running on http://localhost:3001`);
+});
